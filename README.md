@@ -109,6 +109,6 @@ outras: Maven, JUnit 5, Selenium
 
 -Rafael Rabelo Pereira Damaso - 202410365
 
-```
+-Joâo Vitor Givisiez Lessa - 202321062
 
 ```
