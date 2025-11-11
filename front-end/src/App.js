@@ -1,23 +1,29 @@
-import logo from './logo.svg';
+import React, { useState } from 'react';
+import LivrosCRUD from './LivrosCRUD'; // A tela de CRUD 
+import Login from './Login';           // A nova tela de Login
 import './App.css';
 
 function App() {
+  // O "mínimo" de navegação: um state para saber se o utilizador está logado.
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Esta função será chamada pelo componente Login
+  // quando o utilizador clicar em "Entrar".
+  const handleLogin = () => {
+    setIsLoggedIn(true); // Muda o state, o que vai mudar a tela
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      {/* Isto é um 'if' (ternário):
+          Se 'isLoggedIn' for true, mostra a tela de CRUD.
+          Se for false, mostra a tela de Login.
+      */}
+      {isLoggedIn ? (
+        <LivrosCRUD />
+      ) : (
+        <Login onLoginSuccess={handleLogin} />
+      )}
     </div>
   );
 }
