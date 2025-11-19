@@ -1,30 +1,22 @@
-import React, { useState } from 'react';
-import LivrosCRUD from './LivrosCRUD'; // A tela de CRUD 
-import Login from './Login';           // A nova tela de Login
-import './App.css';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';       // Mova seu Login.js para a pasta pages
+import LivrosPage from './pages/LivrosPage';
 
 function App() {
-  // O "mínimo" de navegação: um state para saber se o utilizador está logado.
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  // Esta função será chamada pelo componente Login
-  // quando o utilizador clicar em "Entrar".
-  const handleLogin = () => {
-    setIsLoggedIn(true); // Muda o state, o que vai mudar a tela
-  };
-
   return (
-    <div className="App">
-      {/* Isto é um 'if' (ternário):
-          Se 'isLoggedIn' for true, mostra a tela de CRUD.
-          Se for false, mostra a tela de Login.
-      */}
-      {isLoggedIn ? (
-        <LivrosCRUD />
-      ) : (
-        <Login onLoginSuccess={handleLogin} />
-      )}
-    </div>
+    <Router>
+      <Routes>
+        {/* Rota padrão vai para o Login */}
+        <Route path="/" element={<Login />} />
+        
+        {/* Rota protegida (na Sprint 3 adicionamos segurança real) */}
+        <Route path="/livros" element={<LivrosPage />} />
+        
+        {/* Qualquer outra coisa volta pro login */}
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </Router>
   );
 }
 
