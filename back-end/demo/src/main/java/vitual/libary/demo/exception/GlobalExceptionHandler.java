@@ -1,4 +1,4 @@
-ackage vitual.libary.demo.exceptions;
+package vitual.libary.demo.exception; 
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,8 +8,8 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<String> handleResourceNotFound(ResourceNotFoundException ex) {
+    @ExceptionHandler(BookNotFoundException.class) // Mudado para BookNotFoundException
+    public ResponseEntity<String> handleBookNotFound(BookNotFoundException ex) {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(ex.getMessage());
