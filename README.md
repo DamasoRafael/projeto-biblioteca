@@ -112,3 +112,12 @@ outras: Maven, JUnit 5, Selenium
 -Joâo Vitor Givisiez Lessa - 202321062
 
 -Pyêtro Augusto Malaquias - 202320976
+
+## 6. Regras de Git e Versionamento
+
+Para organizar o desenvolvimento, a equipe adotou as seguintes regras:
+
+1.  **Commits Atómicos:** Cada commit deve resolver uma pequena tarefa ou criar um arquivo específico.
+2.  **Mensagens Claras:** As mensagens de commit devem iniciar com um verbo no imperativo (ex: "Adiciona diagramas", "Corrige bug").
+3.  **Main Protegida:** A branch `main` contém apenas código funcional (releases).
+4.  **Ignorar Arquivos:** O arquivo `.gitignore` deve ser usado para excluir arquivos de configuração da IDE e pastas de build (`target/`, `node_modules/`).
