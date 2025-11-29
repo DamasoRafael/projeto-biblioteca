@@ -3,8 +3,8 @@ package vitual.libary.demo.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data; // Adicione o import do Lombok
-import lombok.NoArgsConstructor; // Adicione o import do Lombok
+import lombok.Data; 
+import lombok.NoArgsConstructor; // Adicionado o  Lombok
 
 @Entity
 @Table(name = "books")
