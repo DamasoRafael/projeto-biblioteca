@@ -6,6 +6,14 @@ Bibliotecas locais e acadêmicas frequentemente dependem de processos manuais, c
 
 Este sistema web propõe uma solução centralizada, permitindo o cadastro de livros e membros, o registro digital de empréstimos e devoluções, e a consulta rápida do acervo e da situação de cada membro.
 
+## FUNCIONALIDADES ENTREGUES (SPRINT FINAL)
+
+O sistema cumpre os requisitos estabelecidos nas etapas de planejamento e desenvolvimento:
+
+* **Gestão de Membros (Tarefa #26):** CRUD completo (Cadastro, Leitura, Atualização e Exclusão).
+* **Gestão de Empréstimos (Tarefa #29):** Lógica de negócio com validação de disponibilidade e regras de empréstimo.
+* **Qualidade e Testes (Tarefas #30 e #31):** Cobertura de testes unitários e validação funcional.
+
 ## INSTRUÇÕES PARA USO
 
 (Instruções para o usuário final do sistema)
@@ -14,96 +22,88 @@ Este sistema web propõe uma solução centralizada, permitindo o cadastro de li
 2.  Faça login com seu usuário e senha (ex: perfil de Bibliotecário ou Membro).
 3.  Use o menu de navegação para acessar as seções de Livros, Membros e Empréstimos.
 
-## INSTRUÇÕES PARA DEVS
+## 3. INSTRUÇÕES PARA DEVS (SETUP)
 
-(Instruções para um novo desenvolvedor configurar o ambiente e rodar o projeto)
+*(Instruções para um novo desenvolvedor configurar o ambiente e rodar o projeto)*
 
-### 3.1 - Clonar o projeto
-
-git clone https://github.com/DamasoRafael/projeto-biblioteca
+### 3.1 - Clonar o repositório
+```bash
+git clone https://github.com/DamasoRafael/projeto-biblioteca.git
 cd projeto-biblioteca
+```
 
-### 3.2 - Configurar o Banco de Dados (PostgreSQL Manual)
+### 3.2 - Configurar o Banco de Dados (Via Docker)
 
-O projeto requer uma instalação local do PostgreSQL. Todos os membros da equipe devem configurar seus ambientes locais com as exatas credenciais padronizadas abaixo para garantir que o projeto funcione para todos.
+Para garantir a padronização do ambiente e atender à **Tarefa #25**, substituímos a instalação manual pelo Docker.
 
-Instalação: Baixe e instale o PostgreSQL (versão 15 ou superior) a partir do site oficial.
+Certifique-se de ter o **Docker Desktop** instalado e rodando. Na raiz do projeto, execute:
 
-Porta: Durante a instalação, quando solicitado, defina a porta como 5433.
+```bash
+docker-compose up -d
+```
 
-Configuração Pós-Instalação:
-
-Abra o pgAdmin (instalado junto com o PostgreSQL).
-
-Conecte-se ao seu servidor local (usando a senha de superusuário postgres que você criou na instalação).
-
-Crie um novo "Login/Group Role" com o nome: admin_biblioteca e a senha: 1234
-(Garanta que ele "Can login").
-
-Crie um novo "Database" com o nome: biblioteca_db e defina o "Owner" (Dono) como admin_biblioteca.
+Isso subirá o banco PostgreSQL automaticamente na porta configurada, com o usuário e banco `biblioteca_db` já criados.
 
 ### 3.3 - Executar o Back-end (Java/Spring)
 
-Abra a pasta /backend na sua IDE (ex: VS ou Eclipse).
+1. Abra a pasta /backend na sua IDE (ex: VS Code ou Eclipse).
 
-Aguarde a IDE baixar as dependências do Maven.
+2. Aguarde a IDE baixar as dependências do Maven.
 
-Confirme que o arquivo src/main/resources/application.properties (ou .yml) do Spring Boot está configurado para usar as credenciais padronizadas:
+3. Execute a classe principal da aplicação Spring (ex: BibliotecaApplication.java).
 
-Properties
-
-spring.datasource.url=jdbc:postgresql://localhost:5433/biblioteca_db
-spring.datasource.username=admin_biblioteca
-spring.datasource.password=senha-padrao-do-projeto-123
-spring.jpa.hibernate.ddl-auto=update
-Execute a classe principal da aplicação Spring (ex: BibliotecaApplication.java).
-
-O back-end estará rodando em http://localhost:8080.
+4. O back-end estará rodando em http://localhost:8080.
 
 ### 3.4 - Executar o Front-end (React)
 
-Abra um novo terminal e navegue para a pasta do front-end:
+1. Abra um novo terminal e navegue para a pasta do front-end:
 
-Bash
-
+```bash
 cd frontend-react
-Instale as dependências do Node.js (só é necessário na primeira vez):
+```
 
-Bash
+2. Instale as dependências do Node.js (só é necessário na primeira vez):
 
+```bash
 npm install
-Inicie o servidor de desenvolvimento:
+```
 
-Bash
+3. Inicie o servidor de desenvolvimento:
 
+```bash
 npm start
-Acesse o sistema no seu navegador em http://localhost:3000.
+```
+
+4. Acesse o sistema no seu navegador em http://localhost:3000.
 
 ### 4. TECNOLOGIAS
 
 (Esta seção cumpre os requisitos da Tarefa #3 da Fase 0)
 
-frontend: React (v18.x), Node.js (v20.x)
+•frontend: React (v18.x), Node.js (v20.x)
 
-backend: Java (v17), Spring Boot (v3.x)
+•backend: Java (v17), Spring Boot (v3.x)
 
-banco de dados: PostgreSQL (v18)
+•banco de dados: PostgreSQL (v15+)
 
-outras: Maven, JUnit 5, Selenium
+•outras: Maven, JUnit 5, Selenium, Docker
 
 ### 5. ORGANIZAÇÃO DO PROJETO
 
-(Esta seção cumpre os requisitos da Tarefa #4 da Fase 0)
+(Esta seção cumpre os requisitos da Tarefa #4 da Fase 0 e atualizações da Sprint Final)
 
+```text
 .
-├── /back-end/ # Código-fonte principal da aplicação Java/Spring
-├── /front-end/ # Código-fonte principal da aplicação React
-│ ├── /src/components/ # Componentes reutilizáveis da interface
-│ └── /src/utils/ # Funções auxiliares e utilitárias
-├── /docs/ # Documentação do projeto
-│ └── /Padrões Adotados/ # Padrões de requisitos (Tarefa #5)
-├── /tests/ # Scripts de testes automatizados (Selenium)
-└── README.md # Este arquivo
+├── /back-end/        # Código-fonte principal da aplicação Java/Spring
+├── /front-end/       # Código-fonte principal da aplicação React
+│   ├── /src/components/  # Componentes reutilizáveis da interface
+│   └── /src/utils/       # Funções auxiliares e utilitárias
+├── /docs/            # Documentação do projeto
+│   ├── /diagramas/       # Diagramas UML (Tarefas #19, #20, #25)
+│   └── Documento_De_Requisitos.doc
+├── /teste/           # Casos de Teste de Validação (Tarefa #31)
+└── README.md         # Este arquivo
+````
 
 # Equipe:
 
@@ -115,9 +115,13 @@ outras: Maven, JUnit 5, Selenium
 
 ## 6. Regras de Git e Versionamento
 
-Para organizar o desenvolvimento, a equipe adotou as seguintes regras:
+Para organizar o desenvolvimento e cumprir a **Tarefa #33**, a equipe adotou as seguintes regras:
 
-1.  **Commits Atómicos:** Cada commit deve resolver uma pequena tarefa ou criar um arquivo específico.
-2.  **Mensagens Claras:** As mensagens de commit devem iniciar com um verbo no imperativo (ex: "Adiciona diagramas", "Corrige bug").
+1.  **Commits Atômicos:** Cada commit deve resolver uma pequena tarefa ou criar um arquivo específico.
+2.  **Mensagens Claras:** As mensagens de commit utilizam prefixos padronizados (Conventional Commits):
+    * `feat:` Novas funcionalidades.
+    * `fix:` Correção de bugs.
+    * `docs:` Documentação.
+    * `test:` Testes.
 3.  **Main Protegida:** A branch `main` contém apenas código funcional (releases).
 4.  **Ignorar Arquivos:** O arquivo `.gitignore` deve ser usado para excluir arquivos de configuração da IDE e pastas de build (`target/`, `node_modules/`).
