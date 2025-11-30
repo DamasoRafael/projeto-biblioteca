@@ -21,7 +21,11 @@ public class User {
 
     @NotBlank(message = "O email é obrigatório.")
     @Email(message = "Email inválido.")
+    @Column(unique = true)
     private String email;
+
+    @NotBlank(message = "A senha é obrigatória.")
+    private String senha;
 
     // Relacionamento Opcional: Um usuário pode ter vários empréstimos
     // Não é estritamente necessário para esta fase, mas é bom para consistência

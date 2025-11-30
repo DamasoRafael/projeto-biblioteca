@@ -1,5 +1,6 @@
 package vitual.libary.demo.controller;
 
+import lombok.Data; // Importante para o DTO
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,30 +19,39 @@ public class LoanController {
         this.loanService = loanService;
     }
 
-    // GET /api/loans - READ ALL
+    // GET /api/loans - LISTAR TODOS
     @GetMapping
     public List<Loan> getAllLoans() {
         return loanService.listarTodos();
     }
     
-    // GET /api/loans/{id} - READ ONE
+    // GET /api/loans/{id} - BUSCAR UM
     @GetMapping("/{id}")
     public Loan getLoanById(@PathVariable Long id) {
-        return loanService.buscarPorId(id); // Status 200 ou 404
+        return loanService.buscarPorId(id);
     }
 
-    // CRIAÇÃO: Endpoint para EMPRESTAR um livro
-    // POST /api/loans/borrow?bookId=1&userId=1
+    // --- MUDANÇA: Classe auxiliar (DTO) para representar o JSON ---
+    @Data
+    public static class LoanRequestDTO {
+        private Long bookId;
+        private Long userId;
+    }
+
+    // CRIAÇÃO: Endpoint para EMPRESTAR um livro (Agora aceita JSON)
+    // POST /api/loans/borrow
+    // Body esperado: { "bookId": 10, "userId": 1 }
     @PostMapping("/borrow")
-    public ResponseEntity<Loan> borrowBook(@RequestParam Long bookId, @RequestParam Long userId) {
-        Loan newLoan = loanService.emprestar(bookId, userId);
-        return new ResponseEntity<>(newLoan, HttpStatus.CREATED); // Status 201
+    public ResponseEntity<Loan> borrowBook(@RequestBody LoanRequestDTO request) {
+        // Extrai os IDs de dentro do objeto request (JSON)
+        Loan newLoan = loanService.emprestar(request.getBookId(), request.getUserId());
+        return new ResponseEntity<>(newLoan, HttpStatus.CREATED);
     }
 
     // ATUALIZAÇÃO: Endpoint para DEVOLVER um livro
     // PUT /api/loans/{loanId}/return
     @PutMapping("/{loanId}/return")
     public Loan returnBook(@PathVariable Long loanId) {
-        return loanService.devolver(loanId); // Status 200 ou 404
+        return loanService.devolver(loanId);
     }
 }
