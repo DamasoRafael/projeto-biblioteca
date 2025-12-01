@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { livroService } from '../services/api'; // Importa a camada de serviço
+import { Link } from 'react-router-dom';
+import { livroService } from '../services/api'; 
 
 function LivrosPage() {
-    // --- ESTADOS (State) ---
-    const [livros, setLivros] = useState([]);
+    // Inicializa como um array vazio para evitar o erro .map (CORRETO)
+    const [livros, setLivros] = useState([]); 
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
@@ -12,163 +13,119 @@ function LivrosPage() {
         isbn: ''
     });
 
-    // --- EFEITOS (Lifecycle) ---
-    // Carrega os livros assim que a página abre
     useEffect(() => {
-        carregarLivros();
+        fetchLivros();
     }, []);
 
-    // --- FUNÇÕES DE LÓGICA ---
-
-    // Busca a lista de livros do Backend
-    const carregarLivros = async () => {
+    // --- FUNÇÃO DE BUSCAR (READ / CONSULTAR) - CORRIGIDA ---
+    const fetchLivros = async () => {
         setLoading(true);
         try {
             const response = await livroService.listar();
-            setLivros(response.data);
+            const data = response.data;
+
+            // CLAUSULA DE SEGURANÇA: Garante que o estado é sempre um array antes do .map()
+            if (Array.isArray(data)) {
+                setLivros(data);
+            } else {
+                // Se o Back-end enviou um objeto ou erro, setamos um array vazio para não quebrar a UI
+                setLivros([]);
+                console.error("A API não retornou uma lista. Recebido:", data);
+            }
         } catch (error) {
-            console.error("Erro ao buscar livros. O Backend está rodando?", error);
-            // Não mostramos alert aqui para não ser chato se o servidor estiver off
+            console.error("Erro ao buscar livros (Backend falhou):", error);
         } finally {
             setLoading(false);
         }
     };
-
-    // Gerencia a mudança nos inputs do formulário
-    const handleInputChange = (e) => {
+    
+    // --- FUNÇÕES DE LÓGICA (CREATE, UPDATE, DELETE) ---
+    // (A lógica de salvamento e exclusão permanece a mesma, mas agora deve funcionar se o Back-end estiver correto)
+    
+    const handleInputChange = (e) => { 
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+        setFormData({ ...formData, [name]: value }); 
     };
 
-    // Envia o formulário (Criar ou Editar)
     const handleSubmit = async (e) => {
         e.preventDefault();
-
         try {
             if (editingId) {
-                // Modo Edição (PUT)
                 await livroService.atualizar(editingId, formData);
-                alert("Livro atualizado com sucesso!");
             } else {
-                // Modo Criação (POST)
                 await livroService.salvar(formData);
-                alert("Livro cadastrado com sucesso!");
             }
-            
-            // Limpa tudo e recarrega a lista
+            alert("Operação realizada com sucesso!");
             resetForm();
-            carregarLivros();
-
+            fetchLivros();
         } catch (error) {
             console.error("Erro ao salvar livro:", error);
-            alert("Erro ao salvar. Verifique o console.");
+            alert("Erro ao salvar livro. Verifique o console ou a validação do Backend.");
         }
     };
 
-    // Prepara o formulário para edição
-    const handleEdit = (livro) => {
-        setEditingId(livro.id);
-        setFormData({
-            titulo: livro.titulo,
-            autor: livro.autor,
-            isbn: livro.isbn
-        });
-    };
-
-    // Exclui um livro
     const handleDelete = async (id) => {
         if (window.confirm("Tem certeza que deseja excluir este livro?")) {
             try {
                 await livroService.excluir(id);
                 alert("Livro excluído.");
-                carregarLivros();
+                fetchLivros();
             } catch (error) {
-                console.error("Erro ao excluir:", error);
+                console.error("Erro ao excluir livro:", error);
                 alert("Erro ao excluir. O livro pode ter empréstimos vinculados.");
             }
         }
     };
 
-    // Limpa o formulário
-    const resetForm = () => {
-        setEditingId(null);
-        setFormData({ titulo: '', autor: '', isbn: '' });
+    const handleEdit = (livro) => {
+        setEditingId(livro.id);
+        setFormData({ titulo: livro.titulo, autor: livro.autor, isbn: livro.isbn });
     };
+
+    const resetForm = () => { setEditingId(null); setFormData({ titulo: '', autor: '', isbn: '' }); };
+
 
     // --- RENDERIZAÇÃO (JSX) ---
     return (
         <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-            <h1>Gestão de Acervo</h1>
+            <Link to="/dashboard">← Voltar</Link>
+            <h1>Gestão de Acervo (Livros)</h1>
 
             {/* Formulário */}
             <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
-                <h3>{editingId ? 'Editar Livro' : 'Novo Livro'}</h3>
+                <h3>{editingId ? 'Editar Livro (RF03)' : 'Cadastrar Novo Livro (RF01)'}</h3>
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <input
-                        type="text"
-                        name="titulo"
-                        placeholder="Título do Livro"
-                        value={formData.titulo}
-                        onChange={handleInputChange}
-                        required
-                        style={{ padding: '8px' }}
-                    />
-                    <input
-                        type="text"
-                        name="autor"
-                        placeholder="Autor"
-                        value={formData.autor}
-                        onChange={handleInputChange}
-                        required
-                        style={{ padding: '8px' }}
-                    />
-                    <input
-                        type="text"
-                        name="isbn"
-                        placeholder="ISBN (Opcional)"
-                        value={formData.isbn}
-                        onChange={handleInputChange}
-                        style={{ padding: '8px' }}
-                    />
+                    <input type="text" name="titulo" placeholder="Título do Livro" value={formData.titulo} onChange={handleInputChange} required style={{ padding: '8px' }}/>
+                    <input type="text" name="autor" placeholder="Autor" value={formData.autor} onChange={handleInputChange} required style={{ padding: '8px' }}/>
+                    <input type="text" name="isbn" placeholder="ISBN" value={formData.isbn} onChange={handleInputChange} style={{ padding: '8px' }}/>
                     
                     <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                         <button type="submit" style={{ padding: '10px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', flex: 1 }}>
                             {editingId ? 'Salvar Alterações' : 'Cadastrar Livro'}
                         </button>
-                        {editingId && (
-                            <button type="button" onClick={resetForm} style={{ padding: '10px', background: '#6c757d', color: 'white', border: 'none', cursor: 'pointer' }}>
-                                Cancelar
-                            </button>
-                        )}
+                        {editingId && <button type="button" onClick={resetForm} style={{ padding: '10px', background: '#6c757d', color: 'white', border: 'none', cursor: 'pointer' }}>Cancelar</button>}
                     </div>
                 </form>
             </div>
 
-            {/* Lista de Livros */}
-            <h3>Acervo ({livros.length})</h3>
-            {loading ? <p>Carregando...</p> : (
+            {/* Lista de Livros Cadastrados */}
+            <h2>Acervo ({livros.length})</h2>
+            {loading && <p>Carregando...</p>}
+            
+            {!loading && livros.length === 0 && <p>Nenhum livro cadastrado. Tente adicionar um!</p>}
+
+            {!loading && (
                 <ul style={{ listStyle: 'none', padding: 0 }}>
-                    {livros.length === 0 && <p>Nenhum livro cadastrado.</p>}
-                    
-                    {livros.map((livro) => (
-                        <li key={livro.id} style={{ border: '1px solid #ddd', padding: '15px', marginBottom: '10px', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    {/* AQUI O .map AGORA É SEGURO */}
+                    {livros.map(livro => (
+                        <li key={livro.id} style={{ borderBottom: '1px solid #eee', padding: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
-                                <strong style={{ fontSize: '1.1em' }}>{livro.titulo}</strong>
-                                <div style={{ color: '#666', fontSize: '0.9em' }}>
-                                    Autor: {livro.autor} | ISBN: {livro.isbn || 'N/A'}
-                                </div>
+                                <strong>{livro.titulo}</strong> <br />
+                                <small>Autor: {livro.autor} | ISBN: {livro.isbn || 'N/A'}</small>
                             </div>
                             <div>
-                                <button 
-                                    onClick={() => handleEdit(livro)} 
-                                    style={{ marginRight: '8px', padding: '5px 10px', background: '#ffc107', border: 'none', cursor: 'pointer', borderRadius: '3px' }}>
-                                    Editar
-                                </button>
-                                <button 
-                                    onClick={() => handleDelete(livro.id)} 
-                                    style={{ padding: '5px 10px', background: '#dc3545', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '3px' }}>
-                                    Excluir
-                                </button>
+                                <button onClick={() => handleEdit(livro)} style={{ marginRight: '5px' }}>Editar (RF03)</button>
+                                <button onClick={() => handleDelete(livro.id)}>Excluir (RF04)</button>
                             </div>
                         </li>
                     ))}

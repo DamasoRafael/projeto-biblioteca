@@ -1,20 +1,26 @@
 import React, { useState } from 'react';
-// Não precisa do axios aqui, pois o login
-// (na Sprint 2) será mais complexo.
-// Por agora, apenas simula a navegação.
+import { useNavigate } from 'react-router-dom';
 
-// A prop "onLoginSuccess" será a função do App.js
-// que "deixa" entrar.
 function Login({ onLoginSuccess }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // Preenchimento automático para agilizar o teste
+  const [email, setEmail] = useState('admin@biblioteca.com'); 
+  const [password, setPassword] = useState('123456');
+  
+  // Hook necessário para navegação em componentes
+  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    // Para a Sprint 1, não valida o login,
-    // apenas simula o sucesso para navegar.
-    console.log("Tentativa de login com:", email);
-    onLoginSuccess(); // Chama a função do App.js para "trocar de tela"
+    // 1. OBRIGATÓRIO: Impede o refresh da página
+    e.preventDefault(); 
+    
+    // --- PASSO DE DEBUG ---
+    console.log("1. FUNÇÃO HANDLE SUBMIT EXECUTADA COM SUCESSO."); 
+    
+    // 2. Chama a função de sucesso no App.js para mudar o estado de autenticação
+    onLoginSuccess(); 
+    
+    // 3. Navega para o Dashboard
+    navigate('/dashboard'); 
   };
 
   return (
@@ -28,7 +34,6 @@ function Login({ onLoginSuccess }) {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
           />
         </div>
         <div style={{ margin: '10px' }}>
@@ -37,10 +42,11 @@ function Login({ onLoginSuccess }) {
             placeholder="Senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
           />
         </div>
-        <button type="submit">Entrar</button>
+        <button type="submit" style={{ padding: '8px 15px', background: '#007bff', color: 'white', border: 'none', cursor: 'pointer' }}>
+            Entrar
+        </button>
       </form>
     </div>
   );
