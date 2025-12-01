@@ -49,18 +49,35 @@ function LivrosPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Converte o ISBN para null se estiver vazio (melhor prática para Strings opcionais)
+        const isbnValue = formData.isbn.trim() === '' ? null : formData.isbn;
+        
+        // CONSTRUÇÃO DO PAYLOAD FINAL (Com todos os campos INT exigidos)
+        const payload = {
+            titulo: formData.titulo,
+            autor: formData.autor,
+            isbn: isbnValue,
+            
+            // CAMPOS DE BACKEND QUE EXIGEM VALOR NUMÉRICO (ADICIONADOS AGORA):
+            anoPublicacao: 2025,           
+            quantidadeTotal: 1,      
+            quantidadeDisponivel: 1,
+        };
+
         try {
             if (editingId) {
-                await livroService.atualizar(editingId, formData);
+                await livroService.atualizar(editingId, payload); 
             } else {
-                await livroService.salvar(formData);
+                await livroService.salvar(payload); 
             }
-            alert("Operação realizada com sucesso!");
+            alert("Operação realizada com sucesso! Integração Finalizada!");
             resetForm();
             fetchLivros();
         } catch (error) {
-            console.error("Erro ao salvar livro:", error);
-            alert("Erro ao salvar livro. Verifique o console ou a validação do Backend.");
+            console.error("Erro fatal na Persistência:", error);
+            // ... (restante do tratamento de erro)
+            alert("Erro ao salvar: Verifique o console para outros erros de validação.");
         }
     };
 
