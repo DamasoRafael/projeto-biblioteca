@@ -338,4 +338,4 @@ HTTP Response
 
 ---
 
-**Todas as rotas verificadas e funcionando! ✅**
+
