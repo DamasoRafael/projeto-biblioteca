@@ -42,13 +42,31 @@ function MembrosPage({ onLogout }) {
         e.preventDefault();
         setError('');
 
+        // Validações básicas
+        if (!formData.nome.trim()) {
+            setError('Nome é obrigatório');
+            return;
+        }
+        if (!formData.email.trim()) {
+            setError('Email é obrigatório');
+            return;
+        }
+        if (!editingId && !formData.senha.trim()) {
+            setError('Senha é obrigatória para novo membro');
+            return;
+        }
+
         try {
             const payload = {
                 nome: formData.nome,
                 email: formData.email,
-                senha: formData.senha,
                 role: formData.role,
             };
+
+            // Adiciona senha apenas se foi preenchida
+            if (formData.senha.trim()) {
+                payload.senha = formData.senha;
+            }
 
             if (editingId) {
                 await membroService.atualizar(editingId, payload);
@@ -60,7 +78,8 @@ function MembrosPage({ onLogout }) {
             resetForm();
             fetchMembros();
         } catch (err) {
-            setError(err.response?.data || 'Erro ao salvar membro');
+            const errorMsg = err.response?.data?.message || err.response?.data || 'Erro ao salvar membro';
+            setError(typeof errorMsg === 'string' ? errorMsg : 'Erro ao salvar membro');
             console.error(err);
         }
     };
@@ -101,13 +120,13 @@ function MembrosPage({ onLogout }) {
     return (
         <div>
             <Navbar onLogout={onLogout} />
-            <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
+            <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
                 <h1>👥 Gestão de Membros</h1>
 
-                {error && <div style={{ color: 'red', marginBottom: '20px' }}>❌ {error}</div>}
+                {error && <div style={{ color: 'white', marginBottom: '20px', padding: '15px', background: '#dc3545', borderRadius: '4px' }}>❌ {error}</div>}
 
                 {/* Formulário */}
-                <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
+                <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #ddd' }}>
                     <h3>{editingId ? 'Editar Membro (RF11)' : 'Cadastrar Novo Membro (RF10)'}</h3>
                     <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                         <input 
@@ -117,7 +136,7 @@ function MembrosPage({ onLogout }) {
                             value={formData.nome} 
                             onChange={handleInputChange} 
                             required 
-                            style={{ padding: '8px', gridColumn: '1 / -1' }}
+                            style={{ padding: '8px', gridColumn: '1 / -1', border: '1px solid #ddd', borderRadius: '4px' }}
                         />
                         <input 
                             type="email" 
@@ -126,32 +145,32 @@ function MembrosPage({ onLogout }) {
                             value={formData.email} 
                             onChange={handleInputChange} 
                             required 
-                            style={{ padding: '8px' }}
+                            style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                         />
                         <input 
                             type="password" 
                             name="senha" 
-                            placeholder="Senha" 
+                            placeholder={editingId ? "Senha (deixe em branco para manter atual)" : "Senha"} 
                             value={formData.senha} 
                             onChange={handleInputChange} 
-                            required 
-                            style={{ padding: '8px' }}
+                            required={!editingId}
+                            style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                         />
                         <select 
                             name="role" 
                             value={formData.role} 
                             onChange={handleInputChange} 
-                            style={{ padding: '8px' }}>
-                            <option value="MEMBRO">Membro</option>
-                            <option value="BIBLIOTECARIO">Bibliotecário</option>
+                            style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}>
+                            <option value="MEMBRO">👤 Membro</option>
+                            <option value="BIBLIOTECARIO">📚 Bibliotecário</option>
                         </select>
                         
                         <div style={{ display: 'flex', gap: '10px', gridColumn: '1 / -1', marginTop: '10px' }}>
-                            <button type="submit" style={{ padding: '10px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', flex: 1 }}>
+                            <button type="submit" style={{ padding: '10px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', flex: 1, borderRadius: '4px', fontWeight: 'bold' }}>
                                 {editingId ? 'Salvar Alterações' : 'Cadastrar Membro'}
                             </button>
                             {editingId && (
-                                <button type="button" onClick={resetForm} style={{ padding: '10px', background: '#6c757d', color: 'white', border: 'none', cursor: 'pointer' }}>
+                                <button type="button" onClick={resetForm} style={{ padding: '10px', background: '#6c757d', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>
                                     Cancelar
                                 </button>
                             )}
@@ -186,16 +205,17 @@ function MembrosPage({ onLogout }) {
                                             <span style={{
                                                 backgroundColor: membro.role === 'BIBLIOTECARIO' ? '#dc3545' : '#28a745',
                                                 color: 'white',
-                                                padding: '4px 8px',
+                                                padding: '6px 10px',
                                                 borderRadius: '4px',
-                                                fontSize: '12px'
+                                                fontSize: '12px',
+                                                fontWeight: 'bold'
                                             }}>
-                                                {membro.role || 'MEMBRO'}
+                                                {membro.role === 'BIBLIOTECARIO' ? '📚 Bibliotecário' : '👤 Membro'}
                                             </span>
                                         </td>
                                         <td style={{ padding: '10px', textAlign: 'center' }}>
-                                            <button onClick={() => handleEdit(membro)} style={{ marginRight: '5px', padding: '5px 10px' }}>✏️</button>
-                                            <button onClick={() => handleDelete(membro.id)} style={{ padding: '5px 10px', background: '#dc3545', color: 'white', border: 'none', cursor: 'pointer' }}>🗑️</button>
+                                            <button onClick={() => handleEdit(membro)} style={{ marginRight: '5px', padding: '6px 10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✏️</button>
+                                            <button onClick={() => handleDelete(membro.id)} style={{ padding: '6px 10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
                                         </td>
                                     </tr>
                                 ))}

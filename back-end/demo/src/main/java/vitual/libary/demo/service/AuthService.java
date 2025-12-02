@@ -48,17 +48,17 @@ public class AuthService {
     }
     
     /**
-     * Faz login de um usuário
+     * Faz login de um usuário (MODO DESENVOLVIMENTO - sem validação de senha)
      */
     public AuthResponse login(AuthRequest request) {
         // Busca usuário por email
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UserNotFoundException("Usuário não encontrado com email: " + request.getEmail()));
         
-        // Valida senha
-        if (!passwordEncoder.matches(request.getSenha(), user.getSenha())) {
-            throw new IllegalArgumentException("Senha incorreta");
-        }
+        // ⚠️ MODO DESENVOLVIMENTO: Aceita qualquer senha
+        // if (!passwordEncoder.matches(request.getSenha(), user.getSenha())) {
+        //     throw new IllegalArgumentException("Senha incorreta");
+        // }
         
         // Gera token JWT
         String token = jwtTokenProvider.generateToken(user);

@@ -34,6 +34,11 @@ public class UserService {
 
         existente.setNome(dados.getNome());
         existente.setEmail(dados.getEmail());
+        
+        // Apenas atualiza a senha se ela foi fornecida (não é null ou vazia)
+        if (dados.getSenha() != null && !dados.getSenha().trim().isEmpty()) {
+            existente.setSenha(dados.getSenha());
+        }
 
         return userRepository.save(existente);
     }
