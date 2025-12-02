@@ -19,15 +19,24 @@ function Dashboard({ onLogout }) {
 
     const carregarEstatisticas = async () => {
         try {
-            const [livrosRes, membrosRes, emprestimosRes] = await Promise.all([
+            const [livrosRes, emprestimosRes] = await Promise.all([
                 livroService.listar(0, 1),
-                membroService.listar(),
                 emprestimoService.listar()
             ]);
 
+            let totalMembros = 0;
+            // Tentar carregar membros apenas se for BIBLIOTECARIO
+            try {
+                const membrosRes = await membroService.listar();
+                totalMembros = membrosRes.data.length || 0;
+            } catch (err) {
+                // Usuário não-bibliotecario não consegue acessar /api/users, ignora
+                console.log('Acesso negado ao listar membros (apenas para BIBLIOTECARIO)');
+            }
+
             setStats({
                 totalLivros: livrosRes.data.totalElements || 0,
-                totalMembros: membrosRes.data.length || 0,
+                totalMembros: totalMembros,
                 totalEmprestimos: emprestimosRes.data.length || 0,
                 emprestimosAtivos: emprestimosRes.data.filter(e => !e.returned).length || 0
             });

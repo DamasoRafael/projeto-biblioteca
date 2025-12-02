@@ -7,6 +7,7 @@ function MembrosPage({ onLogout }) {
     const [loading, setLoading] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [error, setError] = useState('');
+    const [userRole, setUserRole] = useState('');
     const [formData, setFormData] = useState({
         nome: '',
         email: '',
@@ -15,7 +16,16 @@ function MembrosPage({ onLogout }) {
     });
 
     useEffect(() => {
-        fetchMembros();
+        // Obter role do usuário do localStorage
+        const role = localStorage.getItem('user_role');
+        setUserRole(role);
+        
+        // Se não for BIBLIOTECARIO, redirecionar ou desabilitar
+        if (role !== 'BIBLIOTECARIO') {
+            setError('Acesso negado: Apenas bibliotecários podem gerenciar membros');
+        } else {
+            fetchMembros();
+        }
     }, []);
 
     const fetchMembros = async () => {
@@ -126,7 +136,7 @@ function MembrosPage({ onLogout }) {
                 {error && <div style={{ color: 'white', marginBottom: '20px', padding: '15px', background: '#dc3545', borderRadius: '4px' }}>❌ {error}</div>}
 
                 {/* Formulário */}
-                <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #ddd' }}>
+                <div style={{ background: '#f9f9f9', padding: '20px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #ddd', opacity: userRole === 'BIBLIOTECARIO' ? 1 : 0.5, pointerEvents: userRole === 'BIBLIOTECARIO' ? 'auto' : 'none' }}>
                     <h3>{editingId ? 'Editar Membro (RF11)' : 'Cadastrar Novo Membro (RF10)'}</h3>
                     <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                         <input 
@@ -136,6 +146,7 @@ function MembrosPage({ onLogout }) {
                             value={formData.nome} 
                             onChange={handleInputChange} 
                             required 
+                            disabled={userRole !== 'BIBLIOTECARIO'}
                             style={{ padding: '8px', gridColumn: '1 / -1', border: '1px solid #ddd', borderRadius: '4px' }}
                         />
                         <input 
@@ -145,6 +156,7 @@ function MembrosPage({ onLogout }) {
                             value={formData.email} 
                             onChange={handleInputChange} 
                             required 
+                            disabled={userRole !== 'BIBLIOTECARIO'}
                             style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                         />
                         <input 
@@ -154,23 +166,25 @@ function MembrosPage({ onLogout }) {
                             value={formData.senha} 
                             onChange={handleInputChange} 
                             required={!editingId}
+                            disabled={userRole !== 'BIBLIOTECARIO'}
                             style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
                         />
                         <select 
                             name="role" 
                             value={formData.role} 
                             onChange={handleInputChange} 
+                            disabled={userRole !== 'BIBLIOTECARIO'}
                             style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}>
                             <option value="MEMBRO">👤 Membro</option>
                             <option value="BIBLIOTECARIO">📚 Bibliotecário</option>
                         </select>
                         
                         <div style={{ display: 'flex', gap: '10px', gridColumn: '1 / -1', marginTop: '10px' }}>
-                            <button type="submit" style={{ padding: '10px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', flex: 1, borderRadius: '4px', fontWeight: 'bold' }}>
+                            <button type="submit" disabled={userRole !== 'BIBLIOTECARIO'} style={{ padding: '10px', background: userRole === 'BIBLIOTECARIO' ? '#28a745' : '#ccc', color: 'white', border: 'none', cursor: userRole === 'BIBLIOTECARIO' ? 'pointer' : 'not-allowed', flex: 1, borderRadius: '4px', fontWeight: 'bold' }}>
                                 {editingId ? 'Salvar Alterações' : 'Cadastrar Membro'}
                             </button>
                             {editingId && (
-                                <button type="button" onClick={resetForm} style={{ padding: '10px', background: '#6c757d', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>
+                                <button type="button" onClick={resetForm} disabled={userRole !== 'BIBLIOTECARIO'} style={{ padding: '10px', background: userRole === 'BIBLIOTECARIO' ? '#6c757d' : '#ccc', color: 'white', border: 'none', cursor: userRole === 'BIBLIOTECARIO' ? 'pointer' : 'not-allowed', borderRadius: '4px', fontWeight: 'bold' }}>
                                     Cancelar
                                 </button>
                             )}
@@ -214,8 +228,18 @@ function MembrosPage({ onLogout }) {
                                             </span>
                                         </td>
                                         <td style={{ padding: '10px', textAlign: 'center' }}>
-                                            <button onClick={() => handleEdit(membro)} style={{ marginRight: '5px', padding: '6px 10px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>✏️</button>
-                                            <button onClick={() => handleDelete(membro.id)} style={{ padding: '6px 10px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>🗑️</button>
+                                            <button 
+                                                onClick={() => handleEdit(membro)} 
+                                                disabled={userRole !== 'BIBLIOTECARIO'}
+                                                style={{ marginRight: '5px', padding: '6px 10px', background: userRole === 'BIBLIOTECARIO' ? '#007bff' : '#ccc', color: 'white', border: 'none', borderRadius: '4px', cursor: userRole === 'BIBLIOTECARIO' ? 'pointer' : 'not-allowed' }}>
+                                                ✏️
+                                            </button>
+                                            <button 
+                                                onClick={() => handleDelete(membro.id)}
+                                                disabled={userRole !== 'BIBLIOTECARIO'}
+                                                style={{ padding: '6px 10px', background: userRole === 'BIBLIOTECARIO' ? '#dc3545' : '#ccc', color: 'white', border: 'none', borderRadius: '4px', cursor: userRole === 'BIBLIOTECARIO' ? 'pointer' : 'not-allowed' }}>
+                                                🗑️
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}

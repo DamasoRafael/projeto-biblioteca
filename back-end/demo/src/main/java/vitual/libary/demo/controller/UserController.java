@@ -2,6 +2,7 @@ package vitual.libary.demo.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vitual.libary.demo.entity.User;
 import vitual.libary.demo.service.UserService;
@@ -19,33 +20,38 @@ public class UserController {
         this.userService = userService;
     }
 
-    // POST /api/users - CREATE
+    // POST /api/users - CREATE (Apenas BIBLIOTECARIO)
     @PostMapping
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
     public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
         User savedUser = userService.salvar(user);
         return new ResponseEntity<>(savedUser, HttpStatus.CREATED); // Status 201
     }
 
-    // GET /api/users - READ ALL
+    // GET /api/users - READ ALL (Apenas BIBLIOTECARIO)
     @GetMapping
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
     public List<User> getAllUsers() {
         return userService.listarTodos(); // Status 200
     }
 
-    // GET /api/users/{id} - READ ONE
+    // GET /api/users/{id} - READ ONE (Apenas BIBLIOTECARIO ou próprio usuário)
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
     public User getUserById(@PathVariable Long id) {
         return userService.buscarPorId(id); // Status 200 ou 404
     }
 
-    // PUT /api/users/{id} - UPDATE
+    // PUT /api/users/{id} - UPDATE (Apenas BIBLIOTECARIO)
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
     public User updateUser(@PathVariable Long id, @Valid @RequestBody User userDetails) {
         return userService.atualizar(id, userDetails); // Status 200 ou 404
     }
 
-    // DELETE /api/users/{id} - DELETE
+    // DELETE /api/users/{id} - DELETE (Apenas BIBLIOTECARIO)
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deletar(id);
         return ResponseEntity.noContent().build(); // Status 204
