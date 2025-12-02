@@ -299,7 +299,7 @@ git commit -m "fix: corrige validação de livros disponíveis"
 - [Padrões de Codificação](./docs/Padroes_de_Codificacao.md)
 - [Regras de Requisito](./docs/Padrões%20Adotados/Regras_De_Requisito.md)
 - [Mapa de Rotas e Endpoints](./MAPA_ROTAS_ENDPOINTS.md)
-- [Diagnóstico de Login](./DIAGNOSTICO_LOGIN.md)
+
 
 ---
 
