@@ -1,71 +1,85 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 import { emprestimoService } from '../services/api';
 
-function HistoricoPage() {
-    // Pega o ID do Membro logado da URL (ex: /historico/1)
-    const { membroId } = useParams(); 
+function HistoricoPage({ onLogout }) {
+    const { membroId } = useParams();
     const [historico, setHistorico] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
-    useEffect(() => { fetchHistorico(); }, [membroId]); 
+    useEffect(() => {
+        fetchHistorico();
+    }, [membroId]);
 
-    // --- RF12: CONSULTAR HISTÓRICO PESSOAL ---
     const fetchHistorico = async () => {
         setLoading(true);
+        setError('');
         try {
-            // Chama o serviço de listar, passando o ID para filtrar no Backend
-            const response = await emprestimoService.listar(membroId); 
-            setHistorico(response.data);
-        } catch (error) {
-            console.error("Erro ao buscar histórico:", error);
+            const response = await emprestimoService.listarPorUsuario(membroId);
+            setHistorico(Array.isArray(response.data) ? response.data : []);
+        } catch (err) {
+            setError('Erro ao buscar histórico');
+            console.error(err);
+            setHistorico([]);
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div style={{ padding: '20px', fontFamily: 'Arial', maxWidth: '800px', margin: '0 auto' }}>
-            <Link to="/dashboard">← Voltar</Link>
-            <h1 style={{ color: '#007bff' }}>Meu Histórico de Empréstimos (RF12)</h1>
-            <p>Visualizando histórico para Membro ID: <strong>{membroId}</strong></p>
+        <div>
+            <Navbar onLogout={onLogout} />
+            <div style={{ padding: '20px', maxWidth: '1000px', margin: '0 auto' }}>
+                <h1>📝 Histórico de Empréstimos (RF12)</h1>
+                <p style={{ color: '#666' }}>Visualizando histórico para Membro ID: <strong>#{membroId}</strong></p>
 
-            {loading ? (
-                <p>Carregando histórico...</p>
-            ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
-                    <thead>
-                        <tr style={{ background: '#f0f0f0' }}>
-                            <th style={tableHeaderStyle}>Livro</th>
-                            <th style={tableHeaderStyle}>Emprestado em</th>
-                            <th style={tableHeaderStyle}>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {historico.length === 0 ? (
-                            <tr><td colSpan="4" style={{ textAlign: 'center', padding: '20px' }}>Nenhum empréstimo encontrado.</td></tr>
-                        ) : (
-                            historico.map(item => (
-                                <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                                    <td style={tableCellStyle}>{item.livro}</td>
-                                    <td style={tableCellStyle}>{item.dataEmprestimo}</td>
-                                    <td style={tableCellStyle}>
-                                        <span style={{ color: item.status === 'Ativo' ? 'orange' : 'green' }}>
-                                            {item.status}
-                                        </span>
-                                    </td>
+                {error && <div style={{ color: 'red', marginBottom: '20px' }}>❌ {error}</div>}
+
+                {loading && <p>⏳ Carregando histórico...</p>}
+
+                {!loading && historico.length === 0 && <p>Nenhum empréstimo encontrado para este membro</p>}
+
+                {!loading && historico.length > 0 && (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+                            <thead>
+                                <tr style={{ backgroundColor: '#17a2b8', color: 'white' }}>
+                                    <th style={{ padding: '10px', textAlign: 'left' }}>ID</th>
+                                    <th style={{ padding: '10px', textAlign: 'left' }}>Livro</th>
+                                    <th style={{ padding: '10px', textAlign: 'center' }}>Data do Empréstimo</th>
+                                    <th style={{ padding: '10px', textAlign: 'center' }}>Data da Devolução</th>
+                                    <th style={{ padding: '10px', textAlign: 'center' }}>Status</th>
                                 </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            )}
+                            </thead>
+                            <tbody>
+                                {historico.map(item => (
+                                    <tr key={item.id} style={{ borderBottom: '1px solid #ddd' }}>
+                                        <td style={{ padding: '10px' }}>#{item.id}</td>
+                                        <td style={{ padding: '10px' }}>{item.book?.titulo || 'N/A'}</td>
+                                        <td style={{ padding: '10px', textAlign: 'center' }}>{item.loanDate}</td>
+                                        <td style={{ padding: '10px', textAlign: 'center' }}>{item.returnDate || '-'}</td>
+                                        <td style={{ padding: '10px', textAlign: 'center' }}>
+                                            <span style={{
+                                                backgroundColor: item.returned ? '#28a745' : '#ffc107',
+                                                color: '#333',
+                                                padding: '4px 8px',
+                                                borderRadius: '4px',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {item.returned ? '✅ Devolvido' : '⏳ Ativo'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
-
-
-const tableHeaderStyle = { padding: '10px', textAlign: 'left' };
-const tableCellStyle = { padding: '10px', borderRight: '1px solid #eee' };
 
 export default HistoricoPage;

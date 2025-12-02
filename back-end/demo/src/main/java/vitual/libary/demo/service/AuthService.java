@@ -37,13 +37,14 @@ public class AuthService {
         user.setNome(request.getNome());
         user.setEmail(request.getEmail());
         user.setSenha(passwordEncoder.encode(request.getSenha()));
+        user.setRole(request.getRole() != null ? request.getRole() : "MEMBRO");
         
         User savedUser = userRepository.save(user);
         
         // Gera token JWT
         String token = jwtTokenProvider.generateToken(savedUser);
         
-        return new AuthResponse(token, savedUser.getId(), savedUser.getNome(), savedUser.getEmail());
+        return new AuthResponse(token, savedUser.getId(), savedUser.getNome(), savedUser.getEmail(), savedUser.getRole());
     }
     
     /**
@@ -62,6 +63,6 @@ public class AuthService {
         // Gera token JWT
         String token = jwtTokenProvider.generateToken(user);
         
-        return new AuthResponse(token, user.getId(), user.getNome(), user.getEmail());
+        return new AuthResponse(token, user.getId(), user.getNome(), user.getEmail(), user.getRole());
     }
 }

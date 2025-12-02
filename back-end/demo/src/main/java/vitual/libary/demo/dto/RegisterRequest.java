@@ -16,4 +16,6 @@ public class RegisterRequest {
     
     @NotBlank(message = "Senha é obrigatória")
     private String senha;
+    
+    private String role = "MEMBRO"; // MEMBRO ou BIBLIOTECARIO (padrão: MEMBRO)
 }

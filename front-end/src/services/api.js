@@ -7,33 +7,67 @@ const api = axios.create({
     baseURL: API_URL,
 });
 
-// --- LIVROS (RF01-RF04) ---
-export const livroService = {
-    listar: () => api.get('/livros'),
-    salvar: (livro) => api.post('/livros', livro),
-    atualizar: (id, livro) => api.put(`/livros/${id}`, livro),
-    excluir: (id) => api.delete(`/livros/${id}`),
+// Interceptor para adicionar o token JWT em todas as requisições
+api.interceptors.request.use(
+    (config) => {
+        const token = localStorage.getItem('jwt_token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// --- AUTENTICAÇÃO (RF09) ---
+export const authService = {
+    login: (email, senha) => api.post('/auth/login', { email, senha }),
+    register: (nome, email, senha, role = 'MEMBRO') => 
+        api.post('/auth/register', { nome, email, senha, role }),
+    logout: () => {
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('user_id');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_role');
+    },
 };
 
-// --- MEMBROS (RF10, RF11) ---
-export const membroService = { // <--- ESTA EXPORTAÇÃO FALTAVA
-    listar: () => api.get('/membros'),
-    salvar: (membro) => api.post('/membros', membro),
-    atualizar: (id, membro) => api.put(`/membros/${id}`, membro),
-    excluir: (id) => api.delete(`/membros/${id}`),
+// --- LIVROS (RF01-RF04) ---
+export const livroService = {
+    listar: (page = 0, size = 10, titulo = '') => {
+        const params = { page, size };
+        if (titulo) params.titulo = titulo;
+        return api.get('/books', { params });
+    },
+    obterPorId: (id) => api.get(`/books/${id}`),
+    buscarPorTitulo: (titulo, page = 0, size = 10) => 
+        api.get('/books', { params: { titulo, page, size } }),
+    salvar: (livro) => api.post('/books', livro),
+    atualizar: (id, livro) => api.put(`/books/${id}`, livro),
+    excluir: (id) => api.delete(`/books/${id}`),
+};
+
+// --- USUÁRIOS/MEMBROS (RF10, RF11) ---
+export const membroService = {
+    listar: () => api.get('/users'),
+    obterPorId: (id) => api.get(`/users/${id}`),
+    salvar: (membro) => api.post('/users', membro),
+    atualizar: (id, membro) => api.put(`/users/${id}`, membro),
+    excluir: (id) => api.delete(`/users/${id}`),
 };
 
 // --- EMPRÉSTIMOS (RF05-RF08, RF12) ---
-export const emprestimoService = { // <--- ESTA EXPORTAÇÃO FALTAVA
-    listar: (membroId) => {
-        // A API Java deve tratar o filtro por ID de membro
-        const url = membroId ? `/emprestimos/membro/${membroId}` : '/emprestimos';
-        return api.get(url);
-    },
-    salvar: (emprestimo) => api.post('/emprestimos', emprestimo),
-    registrarDevolucao: (id) => api.put(`/emprestimos/${id}/devolver`), 
+export const emprestimoService = {
+    listar: () => api.get('/loans'),
+    listarPorUsuario: (userId) => api.get('/loans', { params: { userId } }),
+    listarAtivos: () => api.get('/loans', { params: { returned: false } }),
+    listarDevolvidos: () => api.get('/loans', { params: { returned: true } }),
+    obterPorId: (id) => api.get(`/loans/${id}`),
+    emprestar: (bookId, userId) => api.post('/loans/borrow', { bookId, userId }),
+    devolver: (loanId) => api.put(`/loans/${loanId}/return`),
 };
 
-// Exporte todos os serviços
-// Se quiser exportar o axios configurado, pode usar:
+// Exporte o axios configurado
 export default api;

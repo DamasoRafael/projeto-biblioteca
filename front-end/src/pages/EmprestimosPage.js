@@ -1,130 +1,181 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { emprestimoService, livroService, membroService } from '../services/api'; // Usando serviço REAL
+import Navbar from '../components/Navbar';
+import { emprestimoService, livroService, membroService } from '../services/api';
 
-function EmprestimosPage() {
+function EmprestimosPage({ onLogout }) {
     const [emprestimos, setEmprestimos] = useState([]);
     const [membros, setMembros] = useState([]);
     const [livros, setLivros] = useState([]);
-    const [formData, setFormData] = useState({ membroId: '', livroId: '' });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [formData, setFormData] = useState({ bookId: '', userId: '' });
 
-    useEffect(() => { fetchData(); }, []);
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     const fetchData = async () => {
+        setLoading(true);
+        setError('');
         try {
-            // Buscamos todos os dados necessários para popular os selects
             const [empRes, membRes, livRes] = await Promise.all([
                 emprestimoService.listar(),
                 membroService.listar(),
-                livroService.listar()
+                livroService.listar(0, 100)
             ]);
-            setEmprestimos(empRes.data);
-            setMembros(membRes.data);
-            setLivros(livRes.data);
-        } catch (error) { console.error("Erro ao carregar dados:", error); }
-    };
-
-    // --- RF05: REALIZAR EMPRÉSTIMO ---
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        const { membroId, livroId } = formData;
-        
-        try {
-            // Chama a API com a lógica de negócio no Backend
-            await emprestimoService.salvar({ membroId: parseInt(membroId), livroId: parseInt(livroId) });
-            alert("Empréstimo realizado com sucesso! (RF05)");
-            fetchData();
-        } catch (error) {
-             if (error.response && error.response.status === 409) {
-                 // Trata o erro 409 (Conflito) vindo do Backend (RN-04/RN-05)
-                 alert("Bloqueado: Membro possui pendências ou Livro indisponível.");
-             } else {
-                 alert("Erro ao realizar empréstimo.");
-             }
+            setEmprestimos(Array.isArray(empRes.data) ? empRes.data : []);
+            setMembros(Array.isArray(membRes.data) ? membRes.data : []);
+            
+            const livrosData = livRes.data.content || livRes.data;
+            setLivros(Array.isArray(livrosData) ? livrosData : []);
+        } catch (err) {
+            setError('Erro ao carregar dados');
+            console.error(err);
+        } finally {
+            setLoading(false);
         }
     };
 
-    // --- RF07: REGISTRAR DEVOLUÇÃO ---
-    const handleDevolucao = async (id) => {
-        if (window.confirm("Confirmar a devolução? (RF07)")) {
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+
+        if (!formData.bookId || !formData.userId) {
+            setError('Selecione um livro e um membro');
+            return;
+        }
+
+        try {
+            await emprestimoService.emprestar(parseInt(formData.bookId), parseInt(formData.userId));
+            alert('Empréstimo realizado com sucesso!');
+            setFormData({ bookId: '', userId: '' });
+            fetchData();
+        } catch (err) {
+            setError(err.response?.data || 'Erro ao realizar empréstimo');
+            console.error(err);
+        }
+    };
+
+    const handleDevolucao = async (loanId) => {
+        if (window.confirm('Confirmar a devolução deste livro?')) {
             try {
-                await emprestimoService.registrarDevolucao(id);
-                alert("Devolução registrada com sucesso! (RF07)");
+                await emprestimoService.devolver(loanId);
+                alert('Devolução registrada com sucesso!');
                 fetchData();
-            } catch (error) {
-                 alert("Erro ao registrar devolução. Verifique o console.");
+            } catch (err) {
+                setError('Erro ao registrar devolução');
+                console.error(err);
             }
         }
     };
 
+    const livrosDisponiveis = livros.filter(l => l.quantidadeDisponivel > 0);
+
     return (
-        <div style={{ padding: '20px', fontFamily: 'Arial', maxWidth: '1000px', margin: '0 auto' }}>
-            <Link to="/dashboard">← Voltar</Link>
-            <h1>Gestão de Empréstimos (I_GestaoEmprestimos)</h1>
+        <div>
+            <Navbar onLogout={onLogout} />
+            <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+                <h1>🔗 Gestão de Empréstimos</h1>
 
-            {/* Formulário de Empréstimo (RF05) */}
-            <div style={{ background: '#e9f7ff', padding: '20px', marginBottom: '30px', borderRadius: '8px' }}>
-                <h3>Realizar Novo Empréstimo (RF05)</h3>
-                <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px' }}>
-                    
-                    {/* Seleção do Membro */}
-                    <select name="membroId" onChange={(e) => setFormData({...formData, membroId: e.target.value})} style={{ padding: '8px', flex: 1 }} required>
-                        <option value="">-- Selecione o Membro --</option>
-                        {membros.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
-                    </select>
-                    
-                    {/* Seleção do Livro */}
-                    <select name="livroId" onChange={(e) => setFormData({...formData, livroId: e.target.value})} style={{ padding: '8px', flex: 1 }} required>
-                        <option value="">-- Selecione o Livro --</option>
-                        {livros.map(l => <option key={l.id} value={l.id}>{l.titulo}</option>)}
-                    </select>
+                {error && <div style={{ color: 'red', marginBottom: '20px' }}>❌ {error}</div>}
 
-                    <button type="submit" style={{ padding: '8px 15px', background: '#007bff', color: 'white', border: 'none', cursor: 'pointer' }}>
-                        Confirmar Empréstimo
-                    </button>
-                </form>
+                {/* Formulário de Empréstimo */}
+                <div style={{ background: '#e9f7ff', padding: '20px', marginBottom: '30px', borderRadius: '8px' }}>
+                    <h3>Realizar Novo Empréstimo (RF05)</h3>
+                    <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px' }}>
+                        <select 
+                            name="userId" 
+                            value={formData.userId}
+                            onChange={handleInputChange}
+                            required 
+                            style={{ padding: '8px' }}>
+                            <option value="">-- Selecione o Membro --</option>
+                            {membros.map(m => (
+                                <option key={m.id} value={m.id}>{m.nome}</option>
+                            ))}
+                        </select>
+                        
+                        <select 
+                            name="bookId" 
+                            value={formData.bookId}
+                            onChange={handleInputChange}
+                            required 
+                            style={{ padding: '8px' }}>
+                            <option value="">-- Selecione o Livro --</option>
+                            {livrosDisponiveis.map(l => (
+                                <option key={l.id} value={l.id}>
+                                    {l.titulo} ({l.quantidadeDisponivel} disponível)
+                                </option>
+                            ))}
+                        </select>
+
+                        <button type="submit" style={{ padding: '8px 20px', background: '#007bff', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+                            Confirmar
+                        </button>
+                    </form>
+                </div>
+
+                {/* Lista de Empréstimos */}
+                <h2>Empréstimos ({emprestimos.length})</h2>
+                {loading && <p>⏳ Carregando...</p>}
+                {!loading && emprestimos.length === 0 && <p>Nenhum empréstimo registrado</p>}
+
+                {!loading && emprestimos.length > 0 && (
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ backgroundColor: '#ffc107', color: '#333' }}>
+                                    <th style={{ padding: '10px', textAlign: 'left' }}>ID</th>
+                                    <th style={{ padding: '10px', textAlign: 'left' }}>Membro</th>
+                                    <th style={{ padding: '10px', textAlign: 'left' }}>Livro</th>
+                                    <th style={{ padding: '10px', textAlign: 'center' }}>Data Empréstimo</th>
+                                    <th style={{ padding: '10px', textAlign: 'center' }}>Status</th>
+                                    <th style={{ padding: '10px', textAlign: 'center' }}>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {emprestimos.map(e => (
+                                    <tr key={e.id} style={{ borderBottom: '1px solid #ddd' }}>
+                                        <td style={{ padding: '10px' }}>#{e.id}</td>
+                                        <td style={{ padding: '10px' }}>{e.user?.nome || 'N/A'}</td>
+                                        <td style={{ padding: '10px' }}>{e.book?.titulo || 'N/A'}</td>
+                                        <td style={{ padding: '10px', textAlign: 'center' }}>{e.loanDate}</td>
+                                        <td style={{ padding: '10px', textAlign: 'center' }}>
+                                            <span style={{
+                                                backgroundColor: e.returned ? '#28a745' : '#ffc107',
+                                                color: '#333',
+                                                padding: '4px 8px',
+                                                borderRadius: '4px',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {e.returned ? '✅ Devolvido' : '⏳ Ativo'}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '10px', textAlign: 'center' }}>
+                                            {!e.returned ? (
+                                                <button 
+                                                    onClick={() => handleDevolucao(e.id)}
+                                                    style={{ padding: '5px 10px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px' }}>
+                                                    Devolver
+                                                </button>
+                                            ) : (
+                                                <span style={{ color: '#28a745' }}>Concluído</span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
-
-            {/* Lista de Empréstimos (RF06, RF07) */}
-            <h2>Empréstimos Ativos e Histórico ({emprestimos.length})</h2>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                    <tr style={{ background: '#333', color: 'white' }}>
-                        <th style={tableHeaderStyle}>Membro</th>
-                        <th style={tableHeaderStyle}>Livro</th>
-                        <th style={tableHeaderStyle}>Empréstimo</th>
-                        <th style={tableHeaderStyle}>Status</th>
-                        <th style={tableHeaderStyle}>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {emprestimos.map(e => (
-                        <tr key={e.id} style={{ borderBottom: '1px solid #eee' }}>
-                            <td style={tableCellStyle}>{e.membro}</td>
-                            <td style={tableCellStyle}>{e.livro}</td>
-                            <td style={tableCellStyle}>{e.dataEmprestimo}</td>
-                            <td style={tableCellStyle}>
-                                <strong style={{ color: e.status === 'Ativo' ? 'orange' : 'green' }}>{e.status}</strong>
-                            </td>
-                            <td style={tableCellStyle}>
-                                {e.status === 'Ativo' ? (
-                                    <button onClick={() => handleDevolucao(e.id)} style={actionButtonStyle}>
-                                        Devolver (RF07)
-                                    </button>
-                                ) : (
-                                    <span>Devolvido</span>
-                                )}
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
         </div>
     );
 }
-
-const tableHeaderStyle = { padding: '10px', textAlign: 'left' };
-const tableCellStyle = { padding: '10px', borderRight: '1px solid #eee' };
-const actionButtonStyle = { padding: '5px 10px', background: '#4CAF50', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '3px' };
 
 export default EmprestimosPage;

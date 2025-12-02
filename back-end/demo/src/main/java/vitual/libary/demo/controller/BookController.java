@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import vitual.libary.demo.entity.Book;
 import vitual.libary.demo.service.BookService;
@@ -24,8 +25,9 @@ public class BookController {
         this.bookService = bookService;
     }
 
-    // POST /api/books - CREATE
+    // POST /api/books - CREATE (Apenas BIBLIOTECARIO)
     @PostMapping
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
     public ResponseEntity<Book> createBook(@Valid @RequestBody Book book) {
         Book savedBook = bookService.salvar(book);
         return new ResponseEntity<>(savedBook, HttpStatus.CREATED);
@@ -53,14 +55,16 @@ public class BookController {
         return bookService.buscarPorId(id);
     }
 
-    // PUT /api/books/{id} - UPDATE
+    // PUT /api/books/{id} - UPDATE (Apenas BIBLIOTECARIO)
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
     public Book updateBook(@PathVariable Long id, @Valid @RequestBody Book bookDetails) {
         return bookService.atualizar(id, bookDetails);
     }
 
-    // DELETE /api/books/{id} - DELETE
+    // DELETE /api/books/{id} - DELETE (Apenas BIBLIOTECARIO)
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
     public ResponseEntity<Void> deleteBook(@PathVariable Long id) {
         bookService.deletar(id);
         return ResponseEntity.noContent().build();

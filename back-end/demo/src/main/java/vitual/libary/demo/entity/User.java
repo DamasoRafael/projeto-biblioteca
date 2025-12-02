@@ -27,6 +27,9 @@ public class User {
     @NotBlank(message = "A senha é obrigatória.")
     private String senha;
 
+    @Column(name = "role", nullable = false)
+    private String role = "MEMBRO"; // MEMBRO ou BIBLIOTECARIO
+
     // Relacionamento Opcional: Um usuário pode ter vários empréstimos
     // Não é estritamente necessário para esta fase, mas é bom para consistência
     // @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)

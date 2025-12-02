@@ -26,6 +26,7 @@ public class JwtTokenProvider {
                 .subject(user.getId().toString())
                 .claim("email", user.getEmail())
                 .claim("nome", user.getNome())
+                .claim("role", user.getRole())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(key, SignatureAlgorithm.HS512)
@@ -35,21 +36,21 @@ public class JwtTokenProvider {
     public Long getUserIdFromToken(String token) {
         SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
         
-        return Long.valueOf(Jwts.parserBuilder()
-                .setSigningKey(key)
+        return Long.valueOf(Jwts.parser()
+                .verifyWith(key)
                 .build()
-                .parseClaimsJws(token)
-                .getBody()
+                .parseSignedClaims(token)
+                .getPayload()
                 .getSubject());
     }
     
     public boolean validateToken(String token) {
         try {
             SecretKey key = Keys.hmacShaKeyFor(secretKey.getBytes());
-            Jwts.parserBuilder()
-                    .setSigningKey(key)
+            Jwts.parser()
+                    .verifyWith(key)
                     .build()
-                    .parseClaimsJws(token);
+                    .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
             return false;

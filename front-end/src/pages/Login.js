@@ -1,32 +1,49 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { authService } from '../services/api';
 
 function Login({ onLoginSuccess }) {
-  // Preenchimento automático para agilizar o teste
-  const [email, setEmail] = useState('admin@biblioteca.com'); 
-  const [password, setPassword] = useState('123456');
-  
-  // Hook necessário para navegação em componentes
+  const [email, setEmail] = useState('joao.silva@teste.com');
+  const [password, setPassword] = useState('senha123');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
-    // 1. OBRIGATÓRIO: Impede o refresh da página
-    e.preventDefault(); 
-    
-    // --- PASSO DE DEBUG ---
-    console.log("1. FUNÇÃO HANDLE SUBMIT EXECUTADA COM SUCESSO."); 
-    
-    // 2. Chama a função de sucesso no App.js para mudar o estado de autenticação
-    onLoginSuccess(); 
-    
-    // 3. Navega para o Dashboard
-    navigate('/dashboard'); 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    try {
+      // Chama o endpoint de login
+      const response = await authService.login(email, password);
+      
+      // Salva o token no localStorage
+      localStorage.setItem('jwt_token', response.data.token);
+      localStorage.setItem('user_id', response.data.userId);
+      localStorage.setItem('user_name', response.data.nome);
+      localStorage.setItem('user_role', response.data.role);
+
+      // Chama a função de sucesso
+      onLoginSuccess();
+
+      // Navega para o dashboard
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.response?.data || 'Erro ao fazer login. Verifique email e senha.');
+      console.error('Erro de login:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div style={{ padding: '50px', fontFamily: 'Arial', textAlign: 'center' }}>
-      <h1>Sistema de Biblioteca</h1>
+    <div style={{ padding: '50px', fontFamily: 'Arial', textAlign: 'center', maxWidth: '400px', margin: '50px auto' }}>
+      <h1>📚 Sistema de Biblioteca</h1>
       <h2>Login (RF09)</h2>
+      
+      {error && <div style={{ color: 'red', marginBottom: '10px' }}>❌ {error}</div>}
+      
       <form onSubmit={handleSubmit}>
         <div style={{ margin: '10px' }}>
           <input
@@ -34,6 +51,9 @@ function Login({ onLoginSuccess }) {
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+            required
+            style={{ width: '100%', padding: '8px' }}
           />
         </div>
         <div style={{ margin: '10px' }}>
@@ -42,12 +62,32 @@ function Login({ onLoginSuccess }) {
             placeholder="Senha"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+            required
+            style={{ width: '100%', padding: '8px' }}
           />
         </div>
-        <button type="submit" style={{ padding: '8px 15px', background: '#007bff', color: 'white', border: 'none', cursor: 'pointer' }}>
-            Entrar
+        <button 
+          type="submit" 
+          disabled={loading}
+          style={{ 
+            padding: '10px 20px', 
+            background: loading ? '#ccc' : '#007bff', 
+            color: 'white', 
+            border: 'none', 
+            cursor: loading ? 'not-allowed' : 'pointer',
+            width: '100%',
+            marginTop: '10px'
+          }}>
+          {loading ? 'Carregando...' : 'Entrar'}
         </button>
       </form>
+
+      <div style={{ marginTop: '20px', fontSize: '12px', color: '#666' }}>
+        <p>📝 Usuários padrão para teste:</p>
+        <p>Email: joao.silva@teste.com</p>
+        <p>Senha: senha123</p>
+      </div>
     </div>
   );
 }
