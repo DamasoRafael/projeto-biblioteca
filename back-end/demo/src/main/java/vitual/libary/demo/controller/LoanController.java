@@ -39,6 +39,12 @@ public class LoanController {
         private Long userId;
     }
 
+    @Data
+    public static class LoanUpdateRequestDTO {
+        private Long bookId;
+        private Long userId;
+    }
+
     // CRIAÇÃO: Endpoint para EMPRESTAR um livro (Apenas BIBLIOTECARIO)
     // POST /api/loans/borrow
     // Body esperado: { "bookId": 10, "userId": 1 }
@@ -50,11 +56,29 @@ public class LoanController {
         return new ResponseEntity<>(newLoan, HttpStatus.CREATED);
     }
 
-    // ATUALIZAÇÃO: Endpoint para DEVOLVER um livro (Apenas BIBLIOTECARIO)
-    // PUT /api/loans/{loanId}/return
+    // DEVOLUÇÃO: Endpoint para DEVOLVER um livro (Apenas BIBLIOTECARIO)
+    // PUT /api/loans/{loanId}/return - DEVE VIR ANTES DE PUT /{loanId} PARA EVITAR CONFLITO
     @PutMapping("/{loanId}/return")
     @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
     public Loan returnBook(@PathVariable Long loanId) {
         return loanService.devolver(loanId);
+    }
+
+    // ATUALIZAÇÃO: Endpoint para EDITAR um empréstimo (Apenas BIBLIOTECARIO)
+    // PUT /api/loans/{loanId}
+    // Body esperado: { "bookId": 10, "userId": 2 }
+    @PutMapping("/{loanId}")
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
+    public Loan updateLoan(@PathVariable Long loanId, @RequestBody LoanUpdateRequestDTO request) {
+        return loanService.atualizar(loanId, request.getBookId(), request.getUserId());
+    }
+
+    // EXCLUSÃO: Endpoint para DELETAR um empréstimo (Apenas BIBLIOTECARIO)
+    // DELETE /api/loans/{loanId}
+    @DeleteMapping("/{loanId}")
+    @PreAuthorize("hasAuthority('BIBLIOTECARIO')")
+    public ResponseEntity<Void> deleteLoan(@PathVariable Long loanId) {
+        loanService.deletar(loanId);
+        return ResponseEntity.noContent().build();
     }
 }

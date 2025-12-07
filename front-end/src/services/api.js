@@ -67,6 +67,8 @@ export const emprestimoService = {
     obterPorId: (id) => api.get(`/loans/${id}`),
     emprestar: (bookId, userId) => api.post('/loans/borrow', { bookId, userId }),
     devolver: (loanId) => api.put(`/loans/${loanId}/return`),
+    atualizar: (loanId, bookId, userId) => api.put(`/loans/${loanId}`, { bookId, userId }),
+    deletar: (loanId) => api.delete(`/loans/${loanId}`),
 };
 
 // Exporte o axios configurado

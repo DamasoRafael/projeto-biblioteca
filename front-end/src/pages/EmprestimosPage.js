@@ -10,8 +10,13 @@ function EmprestimosPage({ onLogout }) {
     const [error, setError] = useState('');
     const [formData, setFormData] = useState({ bookId: '', userId: '' });
     const [filterStatus, setFilterStatus] = useState('todos'); // todos, ativos, devolvidos
+    const [editingLoanId, setEditingLoanId] = useState(null);
+    const [editFormData, setEditFormData] = useState({ bookId: '', userId: '' });
+    const [userRole, setUserRole] = useState('');
 
     useEffect(() => {
+        const role = localStorage.getItem('userRole');
+        setUserRole(role);
         fetchData();
     }, [filterStatus]);
 
@@ -96,6 +101,53 @@ function EmprestimosPage({ onLogout }) {
                 console.error(err);
             }
         }
+    };
+
+    const handleEdit = (emprestimo) => {
+        setEditingLoanId(emprestimo.id);
+        setEditFormData({
+            bookId: emprestimo.book?.id || emprestimo.bookId || '',
+            userId: emprestimo.user?.id || emprestimo.userId || ''
+        });
+    };
+
+    const handleEditSubmit = async (e) => {
+        e.preventDefault();
+        if (!editFormData.bookId || !editFormData.userId) {
+            setError('Selecione um livro e um membro');
+            return;
+        }
+
+        try {
+            await emprestimoService.atualizar(editingLoanId, parseInt(editFormData.bookId), parseInt(editFormData.userId));
+            alert('Empréstimo atualizado com sucesso!');
+            setEditingLoanId(null);
+            setEditFormData({ bookId: '', userId: '' });
+            fetchData();
+        } catch (err) {
+            const errorMsg = err.response?.data?.message || err.response?.data || 'Erro ao atualizar empréstimo';
+            setError(typeof errorMsg === 'string' ? errorMsg : 'Erro ao atualizar empréstimo');
+            console.error(err);
+        }
+    };
+
+    const handleDelete = async (loanId) => {
+        if (window.confirm('Tem certeza que deseja deletar este empréstimo? O livro será liberado.')) {
+            try {
+                await emprestimoService.deletar(loanId);
+                alert('Empréstimo deletado com sucesso!');
+                fetchData();
+            } catch (err) {
+                const errorMsg = err.response?.data?.message || err.response?.data || 'Erro ao deletar empréstimo';
+                setError(typeof errorMsg === 'string' ? errorMsg : 'Erro ao deletar empréstimo');
+                console.error(err);
+            }
+        }
+    };
+
+    const handleEditInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData({ ...editFormData, [name]: value });
     };
 
     const livrosDisponiveis = livros.filter(l => l.quantidadeDisponivel > 0);
@@ -250,13 +302,28 @@ function EmprestimosPage({ onLogout }) {
                                                 {e.returned ? '✅ Devolvido' : '⏳ Ativo'}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '10px', textAlign: 'center' }}>
+                                        <td style={{ padding: '10px', textAlign: 'center', display: 'flex', gap: '5px', justifyContent: 'center' }}>
                                             {!e.returned ? (
-                                                <button 
-                                                    onClick={() => handleDevolucao(e.id)}
-                                                    style={{ padding: '6px 12px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>
-                                                    📖 Devolver
-                                                </button>
+                                                <>
+                                                    <button 
+                                                        onClick={() => handleDevolucao(e.id)}
+                                                        style={{ padding: '6px 12px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}
+                                                        disabled={userRole !== 'BIBLIOTECARIO'}>
+                                                        📖 Devolver
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleEdit(e)}
+                                                        style={{ padding: '6px 12px', background: '#0099ff', color: 'white', border: 'none', cursor: userRole === 'BIBLIOTECARIO' ? 'pointer' : 'not-allowed', borderRadius: '4px', fontWeight: 'bold', opacity: userRole === 'BIBLIOTECARIO' ? 1 : 0.5 }}
+                                                        disabled={userRole !== 'BIBLIOTECARIO'}>
+                                                        ✏️ Editar
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDelete(e.id)}
+                                                        style={{ padding: '6px 12px', background: '#dc3545', color: 'white', border: 'none', cursor: userRole === 'BIBLIOTECARIO' ? 'pointer' : 'not-allowed', borderRadius: '4px', fontWeight: 'bold', opacity: userRole === 'BIBLIOTECARIO' ? 1 : 0.5 }}
+                                                        disabled={userRole !== 'BIBLIOTECARIO'}>
+                                                        🗑️ Deletar
+                                                    </button>
+                                                </>
                                             ) : (
                                                 <span style={{ color: '#28a745', fontWeight: 'bold' }}>✓ Concluído</span>
                                             )}
@@ -265,6 +332,83 @@ function EmprestimosPage({ onLogout }) {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+                )}
+
+                {/* Modal de Edição */}
+                {editingLoanId && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        background: 'rgba(0,0,0,0.5)',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        zIndex: 1000
+                    }}>
+                        <div style={{
+                            background: 'white',
+                            padding: '30px',
+                            borderRadius: '8px',
+                            maxWidth: '400px',
+                            width: '90%',
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.2)'
+                        }}>
+                            <h2>✏️ Editar Empréstimo #{editingLoanId}</h2>
+                            <form onSubmit={handleEditSubmit}>
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Membro:</label>
+                                    <select 
+                                        name="userId" 
+                                        value={editFormData.userId}
+                                        onChange={handleEditInputChange}
+                                        required 
+                                        style={{ padding: '8px', width: '100%', border: '1px solid #ddd', borderRadius: '4px', boxSizing: 'border-box' }}>
+                                        <option value="">-- Selecione o Membro --</option>
+                                        {membros.map(m => (
+                                            <option key={m.id} value={m.id}>{m.nome}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div style={{ marginBottom: '15px' }}>
+                                    <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Livro:</label>
+                                    <select 
+                                        name="bookId" 
+                                        value={editFormData.bookId}
+                                        onChange={handleEditInputChange}
+                                        required 
+                                        style={{ padding: '8px', width: '100%', border: '1px solid #ddd', borderRadius: '4px', boxSizing: 'border-box' }}>
+                                        <option value="">-- Selecione o Livro --</option>
+                                        {livros.map(l => (
+                                            <option key={l.id} value={l.id}>
+                                                {l.titulo} ({l.quantidadeDisponivel} disp.)
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                    <button 
+                                        type="button"
+                                        onClick={() => {
+                                            setEditingLoanId(null);
+                                            setEditFormData({ bookId: '', userId: '' });
+                                        }}
+                                        style={{ padding: '8px 20px', background: '#6c757d', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>
+                                        ❌ Cancelar
+                                    </button>
+                                    <button 
+                                        type="submit"
+                                        style={{ padding: '8px 20px', background: '#007bff', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}>
+                                        ✅ Salvar
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 )}
             </div>
