@@ -9,13 +9,15 @@ function EmprestimosPage({ onLogout }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [formData, setFormData] = useState({ bookId: '', userId: '' });
-    const [filterStatus, setFilterStatus] = useState('todos'); // todos, ativos, devolvidos
+    const [filterStatus, setFilterStatus] = useState('todos');
     const [editingLoanId, setEditingLoanId] = useState(null);
     const [editFormData, setEditFormData] = useState({ bookId: '', userId: '' });
     const [userRole, setUserRole] = useState('');
 
     useEffect(() => {
-        const role = localStorage.getItem('userRole');
+        // ✅ CORREÇÃO: Usar 'user_role' com underscore (consistente com Login.js)
+        const role = localStorage.getItem('user_role');
+        console.log('🔍 Role carregada do localStorage:', role);
         setUserRole(role);
         fetchData();
     }, [filterStatus]);
@@ -24,20 +26,17 @@ function EmprestimosPage({ onLogout }) {
         setLoading(true);
         setError('');
         try {
-            // Buscar dados em paralelo
             const [empRes, membRes, livRes] = await Promise.all([
                 emprestimoService.listar(),
                 membroService.listar(),
                 livroService.listar(0, 100)
             ]);
 
-            // Processar empréstimos
             let emprestimoData = empRes.data || [];
             if (!Array.isArray(emprestimoData)) {
                 emprestimoData = [];
             }
 
-            // Filtrar por status
             if (filterStatus === 'ativos') {
                 emprestimoData = emprestimoData.filter(e => !e.returned);
             } else if (filterStatus === 'devolvidos') {
@@ -46,16 +45,14 @@ function EmprestimosPage({ onLogout }) {
 
             setEmprestimos(emprestimoData);
 
-            // Processar membros
             const membroData = Array.isArray(membRes.data) ? membRes.data : [];
             setMembros(membroData);
 
-            // Processar livros (pode vir paginado ou não)
             const livrosData = livRes.data.content || livRes.data;
             setLivros(Array.isArray(livrosData) ? livrosData : []);
         } catch (err) {
             setError('Erro ao carregar dados');
-            console.error(err);
+            console.error('❌ Erro ao buscar dados:', err);
             setEmprestimos([]);
             setMembros([]);
             setLivros([]);
@@ -80,13 +77,13 @@ function EmprestimosPage({ onLogout }) {
 
         try {
             await emprestimoService.emprestar(parseInt(formData.bookId), parseInt(formData.userId));
-            alert('Empréstimo realizado com sucesso!');
+            alert('✅ Empréstimo realizado com sucesso!');
             setFormData({ bookId: '', userId: '' });
             fetchData();
         } catch (err) {
             const errorMsg = err.response?.data?.message || err.response?.data || 'Erro ao realizar empréstimo';
             setError(typeof errorMsg === 'string' ? errorMsg : 'Erro ao realizar empréstimo');
-            console.error(err);
+            console.error('❌ Erro ao emprestar:', err);
         }
     };
 
@@ -94,16 +91,19 @@ function EmprestimosPage({ onLogout }) {
         if (window.confirm('Confirmar a devolução deste livro?')) {
             try {
                 await emprestimoService.devolver(loanId);
-                alert('Devolução registrada com sucesso!');
+                alert('✅ Devolução registrada com sucesso!');
                 fetchData();
             } catch (err) {
                 setError('Erro ao registrar devolução');
-                console.error(err);
+                console.error('❌ Erro ao devolver:', err);
             }
         }
     };
 
     const handleEdit = (emprestimo) => {
+        console.log('✏️ Editando empréstimo:', emprestimo);
+        console.log('👤 Role do usuário:', userRole);
+        
         setEditingLoanId(emprestimo.id);
         setEditFormData({
             bookId: emprestimo.book?.id || emprestimo.bookId || '',
@@ -113,21 +113,34 @@ function EmprestimosPage({ onLogout }) {
 
     const handleEditSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+
         if (!editFormData.bookId || !editFormData.userId) {
             setError('Selecione um livro e um membro');
             return;
         }
 
+        console.log('📤 Enviando atualização:', {
+            loanId: editingLoanId,
+            bookId: parseInt(editFormData.bookId),
+            userId: parseInt(editFormData.userId)
+        });
+
         try {
-            await emprestimoService.atualizar(editingLoanId, parseInt(editFormData.bookId), parseInt(editFormData.userId));
-            alert('Empréstimo atualizado com sucesso!');
+            await emprestimoService.atualizar(
+                editingLoanId, 
+                parseInt(editFormData.bookId), 
+                parseInt(editFormData.userId)
+            );
+            alert('✅ Empréstimo atualizado com sucesso!');
             setEditingLoanId(null);
             setEditFormData({ bookId: '', userId: '' });
             fetchData();
         } catch (err) {
             const errorMsg = err.response?.data?.message || err.response?.data || 'Erro ao atualizar empréstimo';
             setError(typeof errorMsg === 'string' ? errorMsg : 'Erro ao atualizar empréstimo');
-            console.error(err);
+            console.error('❌ Erro ao atualizar:', err);
+            console.error('📄 Detalhes do erro:', err.response?.data);
         }
     };
 
@@ -135,12 +148,12 @@ function EmprestimosPage({ onLogout }) {
         if (window.confirm('Tem certeza que deseja deletar este empréstimo? O livro será liberado.')) {
             try {
                 await emprestimoService.deletar(loanId);
-                alert('Empréstimo deletado com sucesso!');
+                alert('✅ Empréstimo deletado com sucesso!');
                 fetchData();
             } catch (err) {
                 const errorMsg = err.response?.data?.message || err.response?.data || 'Erro ao deletar empréstimo';
                 setError(typeof errorMsg === 'string' ? errorMsg : 'Erro ao deletar empréstimo');
-                console.error(err);
+                console.error('❌ Erro ao deletar:', err);
             }
         }
     };
@@ -152,9 +165,7 @@ function EmprestimosPage({ onLogout }) {
 
     const livrosDisponiveis = livros.filter(l => l.quantidadeDisponivel > 0);
 
-    // Encontrar nome do membro e livro
     const getMemberName = (emprestimo) => {
-        // Pode vir como user object ou userId, tenta os dois
         if (emprestimo.user && emprestimo.user.nome) {
             return emprestimo.user.nome;
         }
@@ -163,7 +174,6 @@ function EmprestimosPage({ onLogout }) {
     };
 
     const getBookTitle = (emprestimo) => {
-        // Pode vir como book object ou bookId, tenta os dois
         if (emprestimo.book && emprestimo.book.titulo) {
             return emprestimo.book.titulo;
         }
@@ -171,11 +181,16 @@ function EmprestimosPage({ onLogout }) {
         return book ? book.titulo : 'Desconhecido';
     };
 
+    // ✅ CORREÇÃO: Verificação mais robusta de permissões
+    const isBibliotecario = userRole === 'BIBLIOTECARIO';
+
     return (
         <div>
             <Navbar onLogout={onLogout} />
             <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
                 <h1>🔗 Gestão de Empréstimos</h1>
+
+            
 
                 {error && <div style={{ color: 'white', marginBottom: '20px', padding: '15px', background: '#dc3545', borderRadius: '4px' }}>❌ {error}</div>}
 
@@ -234,20 +249,20 @@ function EmprestimosPage({ onLogout }) {
                             borderRadius: '4px',
                             fontWeight: 'bold'
                         }}>
-                        📋 Todos ({emprestimos.length})
+                        📋 Todos
                     </button>
                     <button 
                         onClick={() => setFilterStatus('ativos')}
                         style={{ 
                             padding: '8px 15px',
                             background: filterStatus === 'ativos' ? '#ffc107' : '#ddd',
-                            color: filterStatus === 'ativos' ? '#333' : '#333',
+                            color: '#333',
                             border: 'none',
                             cursor: 'pointer',
                             borderRadius: '4px',
                             fontWeight: 'bold'
                         }}>
-                        ⏳ Ativos ({emprestimos.filter(e => !e.returned).length})
+                        ⏳ Ativos
                     </button>
                     <button 
                         onClick={() => setFilterStatus('devolvidos')}
@@ -260,14 +275,14 @@ function EmprestimosPage({ onLogout }) {
                             borderRadius: '4px',
                             fontWeight: 'bold'
                         }}>
-                        ✅ Devolvidos ({emprestimos.filter(e => e.returned).length})
+                        ✅ Devolvidos
                     </button>
                 </div>
 
                 {/* Lista de Empréstimos */}
                 <h2>Empréstimos ({emprestimos.length})</h2>
                 {loading && <p>⏳ Carregando...</p>}
-                {!loading && emprestimos.length === 0 && <p>Nenhum empréstimo {filterStatus === 'ativos' ? 'ativo' : filterStatus === 'devolvidos' ? 'devolvido' : 'registrado'}</p>}
+                {!loading && emprestimos.length === 0 && <p>Nenhum empréstimo encontrado</p>}
 
                 {!loading && emprestimos.length > 0 && (
                     <div style={{ overflowX: 'auto' }}>
@@ -307,20 +322,47 @@ function EmprestimosPage({ onLogout }) {
                                                 <>
                                                     <button 
                                                         onClick={() => handleDevolucao(e.id)}
-                                                        style={{ padding: '6px 12px', background: '#28a745', color: 'white', border: 'none', cursor: 'pointer', borderRadius: '4px', fontWeight: 'bold' }}
-                                                        disabled={userRole !== 'BIBLIOTECARIO'}>
+                                                        style={{ 
+                                                            padding: '6px 12px', 
+                                                            background: isBibliotecario ? '#28a745' : '#ccc', 
+                                                            color: 'white', 
+                                                            border: 'none', 
+                                                            cursor: isBibliotecario ? 'pointer' : 'not-allowed', 
+                                                            borderRadius: '4px', 
+                                                            fontWeight: 'bold',
+                                                            opacity: isBibliotecario ? 1 : 0.5
+                                                        }}
+                                                        disabled={!isBibliotecario}>
                                                         📖 Devolver
                                                     </button>
                                                     <button 
                                                         onClick={() => handleEdit(e)}
-                                                        style={{ padding: '6px 12px', background: '#0099ff', color: 'white', border: 'none', cursor: userRole === 'BIBLIOTECARIO' ? 'pointer' : 'not-allowed', borderRadius: '4px', fontWeight: 'bold', opacity: userRole === 'BIBLIOTECARIO' ? 1 : 0.5 }}
-                                                        disabled={userRole !== 'BIBLIOTECARIO'}>
+                                                        style={{ 
+                                                            padding: '6px 12px', 
+                                                            background: isBibliotecario ? '#0099ff' : '#ccc', 
+                                                            color: 'white', 
+                                                            border: 'none', 
+                                                            cursor: isBibliotecario ? 'pointer' : 'not-allowed', 
+                                                            borderRadius: '4px', 
+                                                            fontWeight: 'bold',
+                                                            opacity: isBibliotecario ? 1 : 0.5
+                                                        }}
+                                                        disabled={!isBibliotecario}>
                                                         ✏️ Editar
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDelete(e.id)}
-                                                        style={{ padding: '6px 12px', background: '#dc3545', color: 'white', border: 'none', cursor: userRole === 'BIBLIOTECARIO' ? 'pointer' : 'not-allowed', borderRadius: '4px', fontWeight: 'bold', opacity: userRole === 'BIBLIOTECARIO' ? 1 : 0.5 }}
-                                                        disabled={userRole !== 'BIBLIOTECARIO'}>
+                                                        style={{ 
+                                                            padding: '6px 12px', 
+                                                            background: isBibliotecario ? '#dc3545' : '#ccc', 
+                                                            color: 'white', 
+                                                            border: 'none', 
+                                                            cursor: isBibliotecario ? 'pointer' : 'not-allowed', 
+                                                            borderRadius: '4px', 
+                                                            fontWeight: 'bold',
+                                                            opacity: isBibliotecario ? 1 : 0.5
+                                                        }}
+                                                        disabled={!isBibliotecario}>
                                                         🗑️ Deletar
                                                     </button>
                                                 </>
