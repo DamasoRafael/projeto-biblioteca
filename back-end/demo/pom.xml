@@ -6,7 +6,8 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>3.5.7</version>
-		<relativePath/> </parent>
+		<relativePath/> 
+	</parent>
 	<groupId>vitual.libary</groupId>
 	<artifactId>demo</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
@@ -27,6 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>17</java.version>
+		<jacoco.version>0.8.11</jacoco.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -95,6 +97,18 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+		
+		<!-- Mockito já está incluído no spring-boot-starter-test, mas explicitando -->
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -111,6 +125,7 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+			
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -121,6 +136,128 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
+				</configuration>
+			</plugin>
+			
+			<!-- ============================================ -->
+			<!-- PLUGIN JACOCO - ANÁLISE DE COBERTURA DE CÓDIGO -->
+			<!-- ============================================ -->
+			<plugin>
+				<groupId>org.jacoco</groupId>
+				<artifactId>jacoco-maven-plugin</artifactId>
+				<version>${jacoco.version}</version>
+				<executions>
+					<!-- Prepara o agente JaCoCo para instrumentação -->
+					<execution>
+						<id>prepare-agent</id>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
+					</execution>
+					
+					<!-- Gera o relatório de cobertura após os testes -->
+					<execution>
+						<id>report</id>
+						<phase>test</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+						<configuration>
+							<formats>
+								<format>HTML</format>
+								<format>XML</format>
+								<format>CSV</format>
+							</formats>
+						</configuration>
+					</execution>
+					
+					<!-- Verifica se a cobertura mínima foi atingida -->
+					<execution>
+						<id>check</id>
+						<goals>
+							<goal>check</goal>
+						</goals>
+						<configuration>
+							<rules>
+								<rule>
+									<element>PACKAGE</element>
+									<limits>
+										<!-- Cobertura mínima de linhas: 70% -->
+										<limit>
+											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.70</minimum>
+										</limit>
+										<!-- Cobertura mínima de branches: 65% -->
+										<limit>
+											<counter>BRANCH</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.65</minimum>
+										</limit>
+									</limits>
+								</rule>
+								
+								<rule>
+									<element>CLASS</element>
+									<limits>
+										<!-- Cobertura mínima de métodos: 75% -->
+										<limit>
+											<counter>METHOD</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.75</minimum>
+										</limit>
+									</limits>
+								</rule>
+							</rules>
+						</configuration>
+					</execution>
+					
+					<!-- Gera relatório agregado (útil para múltiplos módulos) -->
+					<execution>
+						<id>report-aggregate</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report-aggregate</goal>
+						</goals>
+					</execution>
+				</executions>
+				
+				<configuration>
+					<!-- Excluir classes geradas automaticamente -->
+					<excludes>
+						<exclude>**/config/**</exclude>
+						<exclude>**/dto/**</exclude>
+						<exclude>**/DemoApplication.class</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			
+			<!-- ============================================ -->
+			<!-- PLUGIN SUREFIRE - EXECUÇÃO DOS TESTES -->
+			<!-- ============================================ -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.2.5</version>
+				<configuration>
+					<!-- Exibir saída dos testes no console -->
+					<printSummary>true</printSummary>
+					
+					<!-- Incluir apenas classes de teste que seguem a convenção -->
+					<includes>
+						<include>**/*Test.java</include>
+						<include>**/*Tests.java</include>
+					</includes>
+					
+					<!-- Argumentos JVM para os testes -->
+					<argLine>@{argLine} -Xmx512m</argLine>
+					
+					<!-- Continuar mesmo se houver falhas (útil para CI/CD) -->
+					<testFailureIgnore>false</testFailureIgnore>
+					
+					<!-- Executar testes em paralelo (opcional - cuidado com testes de integração) -->
+					<!-- <parallel>methods</parallel> -->
+					<!-- <threadCount>4</threadCount> -->
 				</configuration>
 			</plugin>
 		</plugins>
